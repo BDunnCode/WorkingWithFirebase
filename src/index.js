@@ -2,8 +2,11 @@
 
 import { initializeApp } from 'firebase/app'
 import {
-  getFirestore, collection, getDocs,
-  addDoc, deleteDoc, doc
+  getFirestore, collection, onSnapshot,
+  addDoc, deleteDoc, doc,
+  query, where,
+  orderBy, serverTimestamp, 
+  getDoc, updateDoc
 } from 'firebase/firestore'
 
 const firebaseConfig = {
@@ -24,17 +27,16 @@ const db = getFirestore()
 // collection ref
 const colRef = collection(db, 'Books')
 
-// get collection data
-getDocs(colRef)
-  .then((snapshot) => {
+// queries
+const q = query(colRef, orderBy('createdAt'))
+
+// real time collection data
+  onSnapshot(q, (snapshot) => {
     let books = []
     snapshot.docs.forEach((doc) => {
       books.push({ ...doc.data(), id: doc.id })
     })
     console.log(books)
-  })
-  .catch(err => {
-    console.log(err.message)
   })
 
   // adding documents
@@ -45,6 +47,7 @@ const addBookForm = document.querySelector('.add')
   addDoc(colRef, {
     title: addBookForm.title.value,
     author: addBookForm.author.value,
+    createdAt: serverTimestamp()
   })
   .then(() => {
     addBookForm.reset()
@@ -64,4 +67,26 @@ const deleteBookForm = document.querySelector('.delete')
       deleteBookForm.reset()
     })
 
+})
+
+// get a single document 
+const docRef = doc(db, 'Books', 'VQDqSBFCtATM67MAdhwO')
+
+onSnapshot(docRef, (doc) => {
+  console.log(doc.data(), doc.id)
+})
+
+// updating a document
+const updateForm = document.querySelector('.update')
+updateForm.addEventListener('submit', (e) => {
+  e.preventDefault()
+
+  let docRef = doc(db, 'Books', updateForm.id.value)
+
+  updateDoc(docRef, {
+    title: 'updated title'
+  })
+  .then(() => {
+    updateForm.reset()
+  })
 })
